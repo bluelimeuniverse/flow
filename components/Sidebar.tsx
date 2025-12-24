@@ -28,7 +28,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) =>
             <Mail className="h-6 w-6 text-white" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">BlueSender</h2>
+            <h2 className="text-xl font-bold text-white tracking-tight">BlueLimeFlow</h2>
             <p className="text-[10px] font-medium text-blue-400 uppercase tracking-wider">EMAIL MARKETING PLATFORM</p>
           </div>
         </div>
@@ -39,16 +39,15 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) =>
         {menuItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeView === item.id;
-          
+
           return (
             <button
               key={item.id}
               onClick={() => onViewChange(item.id)}
-              className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                isActive
+              className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${isActive
                   ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
                   : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
-              }`}
+                }`}
             >
               <Icon className={`h-5 w-5 mt-0.5 ${isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
               <div className="text-left">
@@ -65,12 +64,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) =>
       {/* Infrastructure Section */}
       <div className="p-4 border-t border-slate-700/50 bg-slate-800/50 space-y-2">
         <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">Strumenti</div>
-        
+
         <button
           onClick={() => onViewChange(View.MAILCOW)}
-          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${
-             activeView === View.MAILCOW ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-emerald-400'
-          }`}
+          className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${activeView === View.MAILCOW ? 'text-emerald-400 bg-emerald-500/10' : 'text-slate-400 hover:text-emerald-400'
+            }`}
         >
           <div className={`w-2 h-2 rounded-full ${activeView === View.MAILCOW ? 'bg-emerald-400' : 'bg-emerald-500/50'}`} />
           Gestione Caselle
