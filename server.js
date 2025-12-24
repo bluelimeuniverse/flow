@@ -35,10 +35,9 @@ const DEFAULT_DOMAIN = process.env.MAILCOW_DEFAULT_DOMAIN || 'bluelimeflow.com';
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Serve i file statici della build di React (cartella 'dist')
+// Serve i file statici della build di React (cartella 'dist')
 const buildPath = path.join(__dirname, 'dist');
-// Importante: gestisce il path /sender/ per i file statici
-app.use('/sender', express.static(buildPath));
-app.use(express.static(buildPath)); // Fallback per root
+app.use(express.static(buildPath)); // Serve tutti i file statici da root
 app.use(express.json());
 
 // === LOGGING MIDDLEWARE ===
@@ -592,7 +591,8 @@ app.post('/api/webmail/send', requireAuth, async (req, res) => {
 
 // === GESTIONE ROUTING REACT ===
 // Qualsiasi richiesta a /sender/* ritorna index.html
-app.get('/sender/*', (req, res) => {
+// Redirect root to index.html for SPA routing
+app.get('*', (req, res) => {
   res.sendFile(path.join(buildPath, 'index.html'));
 });
 
