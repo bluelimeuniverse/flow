@@ -4,6 +4,7 @@ import { Dashboard } from './components/Dashboard';
 import { AutomationBuilder } from './components/AutomationBuilder';
 import { CRM } from './components/CRM';
 import { MailboxManager } from './components/MailboxManager';
+import { DomainStudio } from './components/DomainStudio';
 import { Campaigns } from './components/Campaigns';
 import { Webmail } from './components/Webmail';
 import { Menu } from 'lucide-react';
@@ -16,7 +17,9 @@ export enum View {
   AUTOMATIONS = 'automations',
   ANALYTICS = 'analytics',
   SETTINGS = 'settings',
-  MAILCOW = 'mailcow', // Special section for infrastructure
+  MAILCOW = 'mailcow', // Legacy?
+  DOMAINS = 'domains',
+  MAILBOXES = 'mailboxes',
   WEBMAIL = 'webmail' // New View
 }
 
@@ -39,6 +42,11 @@ const App: React.FC = () => {
       case View.CRM:
         return <CRM />;
       case View.MAILCOW:
+        // Fallback or Legacy
+        return <MailboxManager onOpenWebmail={handleOpenWebmail} />;
+      case View.DOMAINS:
+        return <DomainStudio />;
+      case View.MAILBOXES:
         return <MailboxManager onOpenWebmail={handleOpenWebmail} />;
       case View.CAMPAIGNS:
         return <Campaigns />;
@@ -79,7 +87,7 @@ const App: React.FC = () => {
         <header className="h-16 bg-slate-900/95 border-b border-slate-800 flex items-center justify-between px-6 flex-shrink-0">
           <div className="flex items-center gap-4 md:ml-0 ml-12">
             <h1 className="text-xl font-bold text-white capitalize">
-              {activeView === View.MAILCOW ? 'Infrastructure & Mailboxes' : activeView.replace('_', ' ')}
+              {activeView === View.MAILCOW || activeView === View.DOMAINS ? 'Infrastructure & Mailboxes' : activeView.replace('_', ' ')}
             </h1>
           </div>
           <div className="flex items-center gap-4">

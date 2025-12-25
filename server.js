@@ -589,6 +589,68 @@ app.post('/api/webmail/send', requireAuth, async (req, res) => {
   }
 });
 
+// ------------------------------------------------------------------
+// API: Aggiungi Dominio a Mailcow (Bulk o Singolo)
+// ------------------------------------------------------------------
+app.post('/api/domains/add', requireAuth, async (req, res) => {
+  const { domain } = req.body;
+
+  if (!domain) {
+    return res.status(400).json({ success: false, error: 'Dominio mancante' });
+  }
+
+  console.log(`🌍 Richiesta aggiunta dominio: ${domain}`);
+
+  try {
+    // 1. Aggiungi il dominio a Mailcow
+    const response = await fetch(`${MAILCOW_API_URL}/add/domain`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': MAILCOW_API_TOKEN
+      },
+      body: JSON.stringify({
+        domain: domain,
+        description: "Created via BlueLimeFlow",
+        aliases: 400,
+        mailboxes: 10,
+        def_new_mailbox_quota: 1024 * 1024 * 100, // 100MB
+        active: 1
+      })
+    });
+
+    const result = await response.json();
+
+    // Mailcow restituisce un array di messaggi anche in caso di successo o errore
+    const isError = result[0]?.type === 'error' || result.type === 'error';
+    const msg = result[0]?.msg?.[0] || 'Unknown response';
+
+    if (isError) {
+      if (typeof msg === 'string' && msg.includes('exists')) {
+        console.log(`ℹ️  Il dominio ${domain} esisteva già.`);
+      } else {
+        console.error(`❌ Errore Mailcow: ${msg}`);
+        return res.status(500).json({ success: false, error: msg });
+      }
+    }
+
+    // 2. Ritorna successo con i dati DNS teorici (SPF standard e MX standard)
+    return res.json({
+      success: true,
+      msg: 'Dominio configurato',
+      dns: {
+        mx: 'mail.bluelimeflow.com',
+        spf: `v=spf1 mx include:bluelimeflow.com ~all`,
+        dkim: 'CNAME dkim._domainkey -> dkim._domainkey.bluelimeflow.com (Se usi CNAME) oppure copia la chiave.'
+      }
+    });
+
+  } catch (err) {
+    console.error('❌ Errore API Mailcow:', err);
+    res.status(500).json({ success: false, error: 'Errore interno server' });
+  }
+});
+
 // === GESTIONE ROUTING REACT ===
 // Qualsiasi richiesta a /sender/* ritorna index.html
 // Redirect root to index.html for SPA routing

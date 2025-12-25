@@ -1,5 +1,5 @@
 import React from 'react';
-import { LayoutDashboard, Users, Send, Palette, GitFork, BarChart3, Settings, Server, Mail, ExternalLink, Inbox } from 'lucide-react';
+import { LayoutDashboard, Users, Send, Palette, GitFork, BarChart3, Settings, Server, Mail, ExternalLink, Inbox, Globe } from 'lucide-react';
 import { View } from '../App';
 
 interface SidebarProps {
@@ -13,6 +13,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) =>
     { id: View.WEBMAIL, label: 'Webmail', icon: Inbox, sub: 'Leggi e invia email' },
     { id: View.CRM, label: 'CRM & Contacts', icon: Users, sub: 'Gestione contatti e liste' },
     { id: View.CAMPAIGNS, label: 'Campaigns', icon: Send, sub: 'Campagne email attive e archivio' },
+    { id: 'domains', label: 'Domain Studio', icon: Globe, sub: 'Gestione domini e DNS' },
+    { id: 'mailboxes', label: 'Mailboxes', icon: Server, sub: 'Gestione caselle email' },
     { id: View.TEMPLATES, label: 'Templates', icon: Palette, sub: 'Modelli email personalizzabili' },
     { id: View.AUTOMATIONS, label: 'Automations', icon: GitFork, sub: 'Flow Builder e sequenze automatiche' },
     { id: View.ANALYTICS, label: 'Analytics', icon: BarChart3, sub: 'Report e statistiche dettagliate' },
@@ -45,8 +47,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeView, onViewChange }) =>
               key={item.id}
               onClick={() => onViewChange(item.id)}
               className={`w-full flex items-start gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${isActive
-                  ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
-                  : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
+                ? 'bg-blue-600/10 text-blue-400 border border-blue-500/20'
+                : 'text-slate-400 hover:bg-slate-700/50 hover:text-slate-200'
                 }`}
             >
               <Icon className={`h-5 w-5 mt-0.5 ${isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-slate-300'}`} />
