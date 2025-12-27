@@ -1,0 +1,18 @@
+[
+  {
+    "domain": "google",
+    "tld": "com",
+    "status": "notavailable",
+    "price": 11.31,
+    "currency": "USD",
+    "available": false
+  },
+  {
+    "domain": "bluelime-verification-5646",
+    "tld": "com",
+    "status": "available",
+    "price": 11.31,
+    "currency": "USD",
+    "available": true
+  }
+]

@@ -1,0 +1,5 @@
+{
+  "name": "BlueLimesender",
+  "description": "Una dimostrazione interattiva delle capacità di sviluppo web, integrazione Supabase e confronto con strumenti IDE.",
+  "requestFramePermissions": []
+}
