@@ -13,18 +13,16 @@ class DomainNameApi {
 
     createSoapEnvelope(action, body) {
         return `
-        <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/" xmlns:dom="http://schemas.datacontract.org/2004/07/Olipso.ExternalApi.Core.DataContracts.DomainApiContracts" xmlns:core="http://schemas.datacontract.org/2004/07/Olipso.Core.DataContracts" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
-            <soapenv:Header/>
-            <soapenv:Body>
-                <tem:${action}>
-                    <tem:request>
-                        <core:Password>${this.password}</core:Password>
-                        <core:UserName>${this.username}</core:UserName>
-                        ${body}
-                    </tem:request>
-                </tem:${action}>
-            </soapenv:Body>
-        </soapenv:Envelope>`;
+        <Envelope xmlns="http://schemas.xmlsoap.org/soap/envelope/">
+            <Body>
+                <GetResellerDetails xmlns="http://tempuri.org/">
+                    <request>
+                        <Password xmlns="http://schemas.datacontract.org/2004/07/Olipso.Core.DataContracts">${this.password}</Password>
+                        <UserName xmlns="http://schemas.datacontract.org/2004/07/Olipso.Core.DataContracts">${this.username}</UserName>
+                    </request>
+                </GetResellerDetails>
+            </Body>
+        </Envelope>`;
     }
 
     async sendRequest(action, body) {

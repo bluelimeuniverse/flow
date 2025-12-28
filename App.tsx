@@ -8,6 +8,7 @@ import { DomainStudio } from './components/DomainStudio';
 import { Campaigns } from './components/Campaigns';
 import { Webmail } from './components/Webmail';
 import { PaymentSuccess } from './components/PaymentSuccess';
+import { StripeTest } from './components/StripeTest';
 import { Menu } from 'lucide-react';
 
 export enum View {
@@ -22,7 +23,8 @@ export enum View {
   DOMAINS = 'domains',
   MAILBOXES = 'mailboxes',
   WEBMAIL = 'webmail',
-  PAYMENT_SUCCESS = 'payment_success'
+  PAYMENT_SUCCESS = 'payment_success',
+  STRIPE_TEST = 'stripe_test'
 }
 
 const App: React.FC = () => {
@@ -34,7 +36,11 @@ const App: React.FC = () => {
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const sid = params.get('session_id');
-    if (sid) {
+
+    // Check if URL ends with test-stripe
+    if (window.location.href.includes('test-stripe')) {
+      setActiveView(View.STRIPE_TEST);
+    } else if (sid) {
       setPendingSessionId(sid);
       setActiveView(View.PAYMENT_SUCCESS);
       // Clean URL
@@ -68,6 +74,8 @@ const App: React.FC = () => {
         return <Webmail initialMailboxId={currentMailboxId} />;
       case View.PAYMENT_SUCCESS:
         return <PaymentSuccess sessionId={pendingSessionId || ''} onBack={() => setActiveView(View.DOMAINS)} />;
+      case View.STRIPE_TEST:
+        return <StripeTest />;
       default:
         return (
           <div className="flex items-center justify-center h-full text-slate-500">

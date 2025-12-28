@@ -24,6 +24,14 @@ export const DomainStudio: React.FC = () => {
     const [availabilityData, setAvailabilityData] = useState<Record<string, { status: string, price: number, available: boolean, currency?: string }>>({});
     const [isChecking, setIsChecking] = useState(false);
 
+    // Client-side Price Estimator (Fallback/Visual)
+    const getEstimatedPrice = (domain: string) => {
+        if (domain.endsWith('.online')) return 0.98;
+        if (domain.endsWith('.xyz')) return 0.98;
+        if (domain.endsWith('.co')) return 22.98;
+        return 9.48; // Default .com
+    };
+
     // Registration Modal State
     const [showRegisterModal, setShowRegisterModal] = useState(false);
     const [regForm, setRegForm] = useState({
@@ -41,6 +49,7 @@ export const DomainStudio: React.FC = () => {
         // TLDs standard
         list.push(`${cleanKw}.com`);
         list.push(`${cleanKw}.co`);
+        list.push(`${cleanKw}.online`); // Requested by user for cheap testing
 
         // Prefissi
         PREFIXES.forEach(pre => list.push(`${pre}${cleanKw}.com`));
@@ -74,10 +83,10 @@ export const DomainStudio: React.FC = () => {
             if (data.success && Array.isArray(data.results)) {
                 const newMap = { ...availabilityData };
                 data.results.forEach((r: any) => {
-                    const fullDomain = `${r.domain}.${r.tld}`;
+                    const fullDomain = r.domain; // Spaceship returns full domain
                     newMap[fullDomain] = {
                         status: r.status,
-                        price: r.price,
+                        price: r.price || getEstimatedPrice(fullDomain), // Prefer backend price if existing, else estimate
                         currency: r.currency || 'USD',
                         available: r.available
                     };
@@ -91,7 +100,7 @@ export const DomainStudio: React.FC = () => {
                 domains.forEach(d => {
                     newMap[d] = {
                         status: 'available (DEMO)',
-                        price: 10.99,
+                        price: getEstimatedPrice(d),
                         currency: 'USD',
                         available: true
                     };
@@ -313,7 +322,7 @@ export const DomainStudio: React.FC = () => {
                                         <div>
                                             <div className="text-sm text-slate-400">Totale Ordine</div>
                                             <div className="text-2xl font-bold text-white">
-                                                ${(selectedDomains.reduce((acc, d) => acc + (availabilityData[d]?.price || 0.02), 0)).toFixed(2)}
+                                                ${(selectedDomains.reduce((acc, d) => acc + (availabilityData[d]?.price || getEstimatedPrice(d)), 0)).toFixed(2)}
                                             </div>
                                         </div>
                                         <button
@@ -399,7 +408,7 @@ export const DomainStudio: React.FC = () => {
                                     <div className="max-h-40 overflow-y-auto space-y-1 mb-4 text-sm text-indigo-200 scrollbar-thin">
                                         {selectedDomains.map(d => {
                                             const info = availabilityData[d];
-                                            const price = info?.price || 0.02;
+                                            const price = info?.price || getEstimatedPrice(d);
                                             return (
                                                 <div key={d} className="flex justify-between">
                                                     <span>{d}</span>
@@ -410,7 +419,7 @@ export const DomainStudio: React.FC = () => {
                                     </div>
                                     <div className="border-t border-indigo-500/30 pt-4 flex justify-between items-center mb-4">
                                         <span className="font-bold">Totale Stimato:</span>
-                                        <span className="text-xl font-bold text-white">~${(selectedDomains.reduce((acc, d) => acc + (availabilityData[d]?.price || 0.02), 0)).toFixed(2)}</span>
+                                        <span className="text-xl font-bold text-white">~${(selectedDomains.reduce((acc, d) => acc + (availabilityData[d]?.price || getEstimatedPrice(d)), 0)).toFixed(2)}</span>
                                     </div>
                                     <button
                                         onClick={handleRegisterClick}
@@ -434,7 +443,8 @@ export const DomainStudio: React.FC = () => {
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-px bg-slate-700">
                                         {generatedDomains.map(domain => {
                                             // DEMO FORCE: If info is missing (API error swallowed), assume available
-                                            const info = availabilityData[domain] || { available: true, price: 0.02, currency: 'USD' };
+                                            const defaultPrice = getEstimatedPrice(domain);
+                                            const info = availabilityData[domain] || { available: true, price: defaultPrice, currency: 'USD' };
                                             return (
                                                 <div
                                                     key={domain}

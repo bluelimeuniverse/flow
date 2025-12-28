@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 import fetch from 'node-fetch';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
-import { domainApi } from './src/lib/domainNameApi.js';
+import { spaceshipClient } from './src/lib/spaceship.js';
 import Stripe from 'stripe';
 
 // Carica variabili d'ambiente
@@ -654,30 +654,24 @@ app.post('/api/domains/add', requireAuth, async (req, res) => {
 });
 
 // API: Check Domain Availability (DomainNameAPI)
+// API: Check Domain Availability (Spaceship)
 app.post('/api/domains/check', requireAuth, async (req, res) => {
   try {
-    // Default TLDs if not provided
-    const defaults = ['com', 'net', 'org', 'info', 'biz', 'eu', 'it'];
-    const { domain, domains, tlds } = req.body;
-
-    // Support both single "domain" and array "domains"
+    const { domain, domains } = req.body;
     const domainsToCheck = domains || (domain ? [domain] : []);
 
     if (domainsToCheck.length === 0) {
       return res.status(400).json({ success: false, error: 'At least one domain is required' });
     }
 
-    const targetTlds = tlds && tlds.length > 0 ? tlds : defaults;
+    // Call Spaceship API
+    const results = await spaceshipClient.checkAvailability(domainsToCheck);
 
-    console.log(`🔍 Checking availability for ${domainsToCheck.length} domains (TLDs: ${targetTlds.join(',')})`);
-
-    // Call the library with the array
-    const results = await domainApi.checkAvailability(domainsToCheck, targetTlds);
-
+    // Spaceship returns array of objects with status, price, etc.
     res.json({ success: true, results });
 
   } catch (error) {
-    console.error('❌ Domain Check Error:', error);
+    console.error('❌ Domain Check Error (Spaceship):', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -701,13 +695,14 @@ app.post('/api/domains/register', requireAuth, async (req, res) => {
     // Nameservers (Safe defaults for this API provider if known, or generic)
     // Using defaults that work with most registrars if they don't auto-park.
     // For now we pass a generic list, hoping the API respects it or uses its own defaults.
-    const nameservers = ['ns1.domainnameapi.com', 'ns2.domainnameapi.com'];
+    // Nameservers: Spaceship uses defaults or custom. For MVP we use defaults.
+    // const nameservers = ['ns1.domainnameapi.com', 'ns2.domainnameapi.com'];
 
     for (const domain of domains) {
       try {
-        console.log(`Attempting to register: ${domain}`);
-        // Note: registerDomain signature might vary, ensuring matching: (domain, contact, nameservers)
-        const result = await domainApi.registerDomain(domain, contact, nameservers);
+        console.log(`Attempting to register (Spaceship): ${domain}`);
+        // Spaceship Register (MVP, contact email only for now)
+        const result = await spaceshipClient.registerDomain(domain, contact.email);
         console.log(`✅ Registered ${domain}:`, result);
         results.push({ domain, success: true });
       } catch (err) {
@@ -736,11 +731,34 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
   try {
     const { domains, contact } = req.body;
 
-    // Calculate price: 2 cents per domain as requested
-    // CRITICAL: Stripe requires minimum ~50 cents.
-    // We will calculate exact price, but floor it at 50 cents for the transaction to work.
-    let amountInCents = domains.length * 2; // 2 cents each
-    if (amountInCents < 50) amountInCents = 50; // Force minimum 50 cents
+    // Calculate price dynamically based on TLD
+    // Mirroring the client-side logic for safety
+    let pricePerDomain = 948; // $9.48 default
+
+    // Check first domain for TLD (assuming bulk is same TLD or we average, but usually single/bulk)
+    // Detailed implementation: Loop and sum.
+    let totalCents = 0;
+    console.log("💰 Calculating Price for domains:", domains);
+    for (const d of domains) {
+      const lowerD = String(d).toLowerCase().trim();
+      if (lowerD.endsWith('.online') || lowerD.endsWith('.xyz')) {
+        totalCents += 98; // $0.98
+        console.log(` -> ${d} matched .online rule (98 cents)`);
+      }
+      else if (lowerD.endsWith('.co')) {
+        totalCents += 2298; // $22.98
+        console.log(` -> ${d} matched .co rule`);
+      }
+      else {
+        totalCents += 948; // $9.48 (.com)
+        console.log(` -> ${d} matched DEFAULT rule (948 cents)`);
+      }
+    }
+
+    let amountInCents = totalCents;
+
+    // Safety check just in case
+    if (amountInCents < 50) amountInCents = 50;
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -773,6 +791,41 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
   }
 });
 
+app.post('/api/test-stripe', async (req, res) => {
+  try {
+    console.log("💶 Creating 1 Euro Test Session...");
+
+    // Hardcoded 1 Euro
+    const amount = 100; // cents
+    const currency = 'eur';
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: currency,
+            product_data: {
+              name: 'Test Payment (1 Euro)',
+              description: 'Verification of Stripe Integration',
+            },
+            unit_amount: amount,
+          },
+          quantity: 1,
+        },
+      ],
+      mode: 'payment',
+      success_url: `${req.headers.origin}/sender/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.headers.origin}/sender/test-stripe`,
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error('Test Stripe Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.get('/api/verify-checkout', requireAuth, async (req, res) => {
   try {
     const { session_id } = req.query;
@@ -780,6 +833,20 @@ app.get('/api/verify-checkout', requireAuth, async (req, res) => {
 
     if (session.payment_status === 'paid') {
       const domains = JSON.parse(session.metadata.domains || '[]');
+      const contactEmail = session.metadata.contactEmail;
+
+      // TRIGGER REAL REGISTRATION
+      for (const domain of domains) {
+        try {
+          console.log(`💳 Payment Confirmed. Registering ${domain}...`);
+          // Note: This might fail if Contact Info is missing in Spaceship account, but we try.
+          await spaceshipClient.registerDomain(domain, contactEmail);
+        } catch (e) {
+          console.error(`⚠️ Failed to register ${domain} after payment:`, e.message);
+          // We don't fail the response, so Mailcow config can still proceed (or we could retry manually)
+        }
+      }
+
       res.json({ success: true, domains });
     } else {
       res.status(400).json({ success: false, error: 'Payment not completed' });
